@@ -1,0 +1,1149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Atlas - AI Answer Agent</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <!-- External Dependencies -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+  <style>
+    :root {
+      --primary-color: #20b8cd;
+      --primary-hover: #19a0b3;
+      --primary-light: rgba(32, 184, 205, 0.1);
+      --success-color: #10b981;
+      --warning-color: #f59e0b;
+    }
+
+    /* Dark Theme (Default) */
+    [data-theme="dark"] {
+      --bg-dark: #0f1419;
+      --bg-card: #1a1f26;
+      --bg-hover: #252b35;
+      --text-primary: #e8eaed;
+      --text-secondary: #9ca3af;
+      --border-color: #2d3748;
+      --border-light: rgba(255, 255, 255, 0.1);
+      --card-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+      --card-shadow-hover: 0 4px 12px rgba(0, 0, 0, 0.4);
+    }
+
+    /* Light Theme */
+    [data-theme="light"] {
+      --bg-dark: #f8fafc;
+      --bg-card: #ffffff;
+      --bg-hover: #f1f5f9;
+      --text-primary: #1e293b;
+      --text-secondary: #64748b;
+      --border-color: #e2e8f0;
+      --border-light: rgba(0, 0, 0, 0.05);
+      --card-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      --card-shadow-hover: 0 4px 6px rgba(0, 0, 0, 0.15);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      background: var(--bg-dark);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', sans-serif;
+      color: var(--text-primary);
+      min-height: 100vh;
+      transition: background-color 0.3s ease, color 0.3s ease;
+    }
+
+    .container {
+      max-width: 1200px;
+    }
+
+    /* Header */
+    .header {
+      text-align: center;
+      padding: 2rem 0 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .header h1 {
+      font-size: 2.5rem;
+      font-weight: 700;
+      color: var(--primary-color);
+      margin-bottom: 0.5rem;
+      letter-spacing: -0.5px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 1rem;
+    }
+
+    .header p {
+      color: var(--text-secondary);
+      font-size: 1rem;
+    }
+
+    /* Search Box */
+    .search-container {
+      background: var(--bg-card);
+      border-radius: 16px;
+      padding: 2rem;
+      box-shadow: var(--card-shadow);
+      margin-bottom: 2rem;
+      border: 1px solid var(--border-color);
+      transition: all 0.3s ease;
+    }
+
+    .search-container:hover {
+      border-color: var(--border-light);
+      box-shadow: var(--card-shadow-hover);
+    }
+
+    .input-group {
+      position: relative;
+    }
+
+    #query {
+      background: var(--bg-dark);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 1rem 1.5rem;
+      font-size: 1rem;
+      color: var(--text-primary);
+      transition: all 0.3s ease;
+    }
+
+    #query::placeholder {
+      color: var(--text-secondary);
+    }
+
+    #query:focus {
+      border-color: var(--primary-color);
+      box-shadow: 0 0 0 3px var(--primary-light);
+      outline: none;
+      background: var(--bg-card);
+    }
+
+    #searchBtn {
+      background: var(--primary-color);
+      border: none;
+      border-radius: 12px;
+      padding: 1rem 2rem;
+      font-weight: 600;
+      color: var(--bg-dark);
+      transition: all 0.3s ease;
+      margin-left: 0.5rem;
+    }
+
+    #searchBtn:hover:not(:disabled) {
+      background: var(--primary-hover);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(32, 184, 205, 0.4);
+    }
+
+    #searchBtn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    #clearContextBtn {
+      background: transparent;
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      color: var(--text-secondary);
+      margin-left: 0.5rem;
+      padding: 0.5rem 1rem;
+      transition: all 0.3s ease;
+    }
+
+    #clearContextBtn:hover {
+      border-color: var(--primary-color);
+      color: var(--primary-color);
+      background: var(--primary-light);
+    }
+
+    /* Status Indicators */
+    .status-container {
+      margin-top: 1rem;
+      padding: 1rem;
+      background: var(--bg-dark);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      display: none;
+    }
+
+    .status-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.5rem 0;
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+    }
+
+    .status-item i {
+      color: var(--primary-color);
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+
+    .status-item.completed i {
+      color: var(--success-color);
+      animation: none;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    /* Answer Section */
+    #answerSection {
+      display: none;
+      animation: fadeIn 0.5s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      box-shadow: var(--card-shadow);
+      margin-bottom: 1.5rem;
+      transition: all 0.3s ease;
+    }
+
+    .card:hover {
+      border-color: var(--border-light);
+      box-shadow: var(--card-shadow-hover);
+    }
+
+    .card-body {
+      padding: 2rem;
+    }
+
+    .card-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .card-title i {
+      color: var(--primary-color);
+    }
+
+    .badge {
+      background: var(--primary-color) !important;
+      color: var(--bg-dark) !important;
+    }
+
+    /* Answer Text */
+    .markdown-body {
+      font-size: 1.05rem;
+      line-height: 1.8;
+      color: var(--text-primary);
+    }
+
+    .markdown-body h2 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-top: 1.5rem;
+      margin-bottom: 1rem;
+      color: var(--text-primary);
+    }
+
+    .markdown-body h3 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin-top: 1.25rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .markdown-body p {
+      margin-bottom: 1rem;
+    }
+
+    .markdown-body ul, .markdown-body ol {
+      margin-left: 1.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .markdown-body code {
+      background: var(--bg-dark);
+      color: var(--primary-color);
+      padding: 0.2rem 0.4rem;
+      border-radius: 4px;
+      font-family: 'Courier New', monospace;
+      border: 1px solid var(--border-color);
+    }
+
+    /* Source Badge */
+    .source-badge {
+      background: var(--primary-color);
+      color: var(--bg-dark);
+      padding: 2px 8px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      margin: 0 2px;
+      cursor: pointer;
+      display: inline-block;
+      transition: all 0.2s ease;
+      text-decoration: none;
+    }
+
+    .source-badge:hover {
+      background: var(--primary-hover);
+      transform: translateY(-1px);
+      box-shadow: 0 2px 8px rgba(32, 184, 205, 0.5);
+    }
+
+    /* Sources List */
+    .source-link {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.75rem;
+      margin-bottom: 0.5rem;
+      border-radius: 8px;
+      border: 1px solid transparent;
+      transition: all 0.2s ease;
+      color: var(--text-primary);
+      text-decoration: none;
+    }
+
+    .source-link:hover {
+      background: var(--bg-hover);
+      border-color: var(--border-light);
+      transform: translateX(4px);
+    }
+
+    .source-link .badge {
+      background: var(--primary-color);
+      color: var(--bg-dark);
+      font-weight: 600;
+      padding: 0.4rem 0.6rem;
+      border-radius: 6px;
+    }
+
+    .source-link .source-text {
+      flex: 1;
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+      word-break: break-all;
+    }
+
+    .source-link i {
+      color: var(--text-secondary);
+    }
+
+    /* Related Questions */
+    #relatedQuestions {
+      list-style: none;
+      padding: 0;
+    }
+
+    #relatedQuestions li {
+      margin-bottom: 0.75rem;
+    }
+
+    #relatedQuestions li a {
+      display: block;
+      padding: 1rem;
+      background: var(--bg-dark);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      color: var(--text-primary);
+      text-decoration: none;
+      transition: all 0.2s ease;
+      font-size: 0.95rem;
+    }
+
+    #relatedQuestions li a:hover {
+      background: var(--bg-hover);
+      border-color: var(--primary-color);
+      color: var(--primary-color);
+      transform: translateX(4px);
+    }
+
+    /* Query Info Badge */
+    .query-info {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      background: var(--primary-light);
+      border: 1px solid var(--primary-color);
+      border-radius: 8px;
+      font-size: 0.85rem;
+      color: var(--primary-color);
+      margin-bottom: 1rem;
+    }
+
+    .query-info i {
+      color: var(--primary-color);
+    }
+
+    /* Processing Time */
+    .processing-time {
+      text-align: right;
+      color: var(--text-secondary);
+      font-size: 0.85rem;
+      margin-top: 1rem;
+    }
+
+    /* Skeleton Loader */
+    .skeleton {
+      background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+      background-size: 200% 100%;
+      animation: loading 1.5s ease-in-out infinite;
+      border-radius: 4px;
+    }
+
+    @keyframes loading {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    .skeleton-text {
+      height: 1rem;
+      margin-bottom: 0.5rem;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .header h1 {
+        font-size: 1.75rem;
+      }
+
+      .search-container {
+        padding: 1.5rem;
+      }
+
+      #searchBtn {
+        margin-top: 0.5rem;
+        width: 100%;
+      }
+
+      #clearContextBtn {
+        margin-top: 0.5rem;
+        width: 100%;
+      }
+
+      .card-body {
+        padding: 1.5rem;
+      }
+    }
+
+    /* Streaming indicator - cursor-like */
+    .typing-indicator {
+      display: inline-block;
+      width: 2px;
+      height: 1.2em;
+      background: var(--primary-color);
+      animation: blink 1s infinite;
+      margin-left: 2px;
+      vertical-align: text-bottom;
+    }
+
+    @keyframes blink {
+      0%, 49% { opacity: 1; }
+      50%, 100% { opacity: 0; }
+    }
+
+    /* Streaming message indicator (three dots) */
+    .stream-loading {
+      display: inline-flex;
+      gap: 4px;
+      margin-left: 4px;
+    }
+
+    .stream-loading span {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--primary-color);
+      animation: bounce 1.4s infinite ease-in-out;
+    }
+
+    .stream-loading span:nth-child(1) {
+      animation-delay: -0.32s;
+    }
+
+    .stream-loading span:nth-child(2) {
+      animation-delay: -0.16s;
+    }
+
+    @keyframes bounce {
+      0%, 80%, 100% { 
+        transform: scale(0);
+        opacity: 0.5;
+      }
+      40% { 
+        transform: scale(1);
+        opacity: 1;
+      }
+    }
+
+    /* Theme Toggle Button */
+    .theme-toggle {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: var(--bg-card);
+      border: 2px solid var(--border-color);
+      box-shadow: var(--card-shadow-hover);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      z-index: 1000;
+      color: var(--primary-color);
+      font-size: 1.5rem;
+    }
+
+    .theme-toggle:hover {
+      transform: scale(1.1) rotate(15deg);
+      border-color: var(--primary-color);
+      box-shadow: 0 4px 20px rgba(32, 184, 205, 0.4);
+    }
+
+    .theme-toggle:active {
+      transform: scale(0.95);
+    }
+
+    .theme-toggle i {
+      transition: transform 0.3s ease;
+    }
+
+    .theme-toggle:hover i {
+      transform: rotate(180deg);
+    }
+
+    /* Smooth transitions for theme switching */
+    .card,
+    .search-container,
+    .status-container,
+    #query,
+    #searchBtn,
+    #clearContextBtn,
+    .source-link,
+    #relatedQuestions li a,
+    .query-info {
+      transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+    }
+
+    @media (max-width: 768px) {
+      .theme-toggle {
+        bottom: 1rem;
+        right: 1rem;
+        width: 48px;
+        height: 48px;
+        font-size: 1.25rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Theme Toggle Button -->
+  <button class="theme-toggle" id="themeToggle" title="Toggle dark/light mode">
+    <i class="fas fa-moon"></i>
+  </button>
+
+  <div class="container">
+    <!-- Header -->
+    <div class="header">
+      <h1><i class="fas fa-brain"></i> Atlas</h1>
+      <p>AI-powered answer engine with source citations</p>
+    </div>
+
+    <!-- Search Box -->
+    <div class="search-container">
+      <div class="input-group">
+        <input 
+          type="text" 
+          id="query" 
+          class="form-control" 
+          placeholder="Ask me anything..." 
+          autocomplete="off"
+        />
+        <button class="btn btn-primary" id="searchBtn">
+          <i class="fas fa-search"></i> Search
+        </button>
+        <button class="btn btn-outline-secondary" id="clearContextBtn" title="Clear conversation context">
+          <i class="fas fa-trash"></i>
+        </button>
+      </div>
+
+      <!-- Status Container -->
+      <div class="status-container" id="statusContainer">
+        <div class="status-item" id="statusAnalyze">
+          <i class="fas fa-cog fa-spin"></i>
+          <span>Analyzing query...</span>
+        </div>
+        <div class="status-item" id="statusSearch">
+          <i class="fas fa-search"></i>
+          <span>Searching sources...</span>
+        </div>
+        <div class="status-item" id="statusScrape">
+          <i class="fas fa-download"></i>
+          <span>Reading articles...</span>
+        </div>
+        <div class="status-item" id="statusGenerate">
+          <i class="fas fa-magic"></i>
+          <span>Generating answer...</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Results Section -->
+    <div id="answerSection">
+      <div class="row">
+        <!-- Answer Column -->
+        <div class="col-lg-8">
+          <!-- Query Info -->
+          <div id="queryInfoContainer"></div>
+
+          <!-- Answer Card -->
+          <div class="card">
+            <div class="card-body">
+              <h5 class="card-title">
+                <i class="fas fa-comment-alt"></i>
+                Answer
+              </h5>
+              <div id="answerText" class="markdown-body"></div>
+              <div class="processing-time" id="processingTime"></div>
+            </div>
+          </div>
+
+          <!-- Related Questions Card -->
+          <div class="card" id="relatedCard" style="display: none;">
+            <div class="card-body">
+              <h5 class="card-title">
+                <i class="fas fa-lightbulb"></i>
+                Related Questions
+              </h5>
+              <ul id="relatedQuestions"></ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sources Column -->
+        <div class="col-lg-4">
+          <div class="card">
+            <div class="card-body">
+              <h5 class="card-title">
+                <i class="fas fa-link"></i>
+                Sources
+                <span class="badge bg-primary" id="sourceCount">0</span>
+              </h5>
+              <div id="sourcesList"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- JavaScript -->
+  <script>
+    // State management
+    let isSearching = false;
+    let currentQuery = '';
+
+    // Theme Management
+    (function initTheme() {
+      // Check localStorage for saved theme, default to dark
+      const savedTheme = localStorage.getItem('theme') || 'dark';
+      document.documentElement.setAttribute('data-theme', savedTheme);
+      updateThemeIcon(savedTheme);
+    })();
+
+    function updateThemeIcon(theme) {
+      const icon = document.querySelector('#themeToggle i');
+      if (theme === 'dark') {
+        icon.className = 'fas fa-sun'; // Show sun icon in dark mode
+      } else {
+        icon.className = 'fas fa-moon'; // Show moon icon in light mode
+      }
+    }
+
+    function toggleTheme() {
+      const currentTheme = document.documentElement.getAttribute('data-theme');
+      const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+      
+      // Update theme
+      document.documentElement.setAttribute('data-theme', newTheme);
+      localStorage.setItem('theme', newTheme);
+      updateThemeIcon(newTheme);
+      
+      // Show toast notification
+      const themeName = newTheme === 'dark' ? 'Dark' : 'Light';
+      showToast(`${themeName} mode enabled`, 'success');
+    }
+
+    function showToast(message, type = 'info') {
+      const colors = {
+        success: '#10b981',
+        info: '#20b8cd',
+        warning: '#f59e0b',
+      };
+
+      const toast = $(`
+        <div class="position-fixed bottom-0 start-50 translate-middle-x p-3" style="z-index: 1100; margin-bottom: 80px;">
+          <div class="rounded px-4 py-3 text-white" style="background: ${colors[type]}; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">
+            <i class="fas fa-${type === 'success' ? 'check-circle' : 'info-circle'}"></i>
+            ${message}
+          </div>
+        </div>
+      `);
+      
+      $('body').append(toast);
+      setTimeout(() => {
+        toast.fadeOut(300, function() { $(this).remove(); });
+      }, 2000);
+    }
+
+    // Utility: Sanitize URL for display
+    function sanitizeURL(url) {
+      try {
+        const urlObj = new URL(url);
+        return urlObj.hostname.replace('www.', '') + urlObj.pathname.split('?')[0];
+      } catch {
+        return url.replace(/^https?:\/\/(www\.)?/, '').split(/[?#]/)[0];
+      }
+    }
+
+    // Update status indicators
+    function updateStatus(step, completed = false) {
+      const steps = ['statusAnalyze', 'statusSearch', 'statusScrape', 'statusGenerate'];
+      const currentIndex = steps.indexOf(step);
+      
+      steps.forEach((s, index) => {
+        const element = $(`#${s}`);
+        if (index < currentIndex) {
+          element.addClass('completed');
+          element.find('i').removeClass('fa-spin fa-cog fa-search fa-download fa-magic')
+            .addClass('fa-check-circle');
+        } else if (s === step) {
+          if (completed) {
+            element.addClass('completed');
+            element.find('i').removeClass('fa-spin fa-cog fa-search fa-download fa-magic')
+              .addClass('fa-check-circle');
+          }
+        }
+      });
+    }
+
+    // Show loading state
+    function showLoading() {
+      $('#statusContainer').show();
+      $('#answerSection').hide();
+      $('#searchBtn').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Searching...');
+      isSearching = true;
+    }
+
+    // Hide loading state
+    function hideLoading() {
+      $('#statusContainer').hide();
+      $('#searchBtn').prop('disabled', false).html('<i class="fas fa-search"></i> Search');
+      isSearching = false;
+    }
+
+    // Display query info
+    function displayQueryInfo(queryInfo) {
+      if (!queryInfo) return;
+      
+      let html = '';
+      if (queryInfo.isContextual) {
+        html = `<div class="query-info">
+          <i class="fas fa-link"></i>
+          <span>Contextual query detected. Search optimized for: "${queryInfo.processed}"</span>
+        </div>`;
+      } else if (queryInfo.topic) {
+        html = `<div class="query-info">
+          <i class="fas fa-tag"></i>
+          <span>Topic: ${queryInfo.topic}</span>
+        </div>`;
+      }
+      
+      $('#queryInfoContainer').html(html);
+    }
+
+    // Smooth scroll to answer section
+    function scrollToAnswer() {
+      const answerSection = document.getElementById('answerSection');
+      if (answerSection) {
+        const yOffset = -20; // Offset for better visibility
+        const y = answerSection.getBoundingClientRect().top + window.pageYOffset + yOffset;
+        
+        window.scrollTo({
+          top: y,
+          behavior: 'smooth'
+        });
+      }
+    }
+
+    // Fetch related questions
+    async function fetchRelatedQuestions(query, answer = null) {
+      try {
+        const res = await fetch('http://localhost:3001/related', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ question: query, answer })
+        });
+        const data = await res.json();
+        return data.related || [];
+      } catch (err) {
+        console.error('Related questions failed:', err);
+        return [];
+      }
+    }
+
+    // Display related questions
+    function displayRelatedQuestions(questions) {
+      if (!questions || questions.length === 0) return;
+
+      $('#relatedQuestions').empty();
+      questions.forEach(q => {
+        const li = $('<li>').append(
+          $('<a>').text(q).on('click', function() {
+            $('#query').val(q);
+            performSearch();
+          })
+        );
+        $('#relatedQuestions').append(li);
+      });
+      $('#relatedCard').slideDown();
+    }
+
+    // Main search function with streaming support
+    async function performSearch() {
+      const query = $('#query').val().trim();
+      if (!query || isSearching) return;
+
+      currentQuery = query;
+
+      // Reset UI
+      $('#answerSection').hide();
+      $('#sourcesList').empty();
+      $('#answerText').html('');
+      $('#relatedQuestions').empty();
+      $('#relatedCard').hide();
+      $('#queryInfoContainer').empty();
+      $('#processingTime').empty();
+
+      showLoading();
+
+      // Start related questions fetch in parallel
+      const relatedPromise = fetchRelatedQuestions(query);
+
+      try {
+        updateStatus('statusAnalyze', false);
+        
+        // Try streaming first
+        const streamingEnabled = true; // Can make this a toggle
+        
+        if (streamingEnabled) {
+          await performStreamingSearch(query, relatedPromise);
+        } else {
+          await performNonStreamingSearch(query, relatedPromise);
+        }
+
+      } catch (err) {
+        console.error('Search failed:', err);
+        hideLoading();
+        $('#answerText').html(`<div class="alert alert-danger">
+          <i class="fas fa-exclamation-triangle"></i> 
+          Error: Could not fetch answer. Please try again.
+        </div>`);
+        $('#answerSection').fadeIn();
+      }
+    }
+
+    // Streaming search with SSE
+    async function performStreamingSearch(query, relatedPromise) {
+      const startTime = Date.now();
+      let fullAnswer = '';
+      let citations = [];
+      let queryInfo = null;
+      let sourcesDisplayed = false;
+
+      return new Promise((resolve, reject) => {
+        const eventSource = new EventSource(
+          `http://localhost:3001/ask/stream?question=${encodeURIComponent(query)}`
+        );
+
+        eventSource.addEventListener('metadata', (event) => {
+          const data = JSON.parse(event.data);
+          citations = data.sources || [];
+          queryInfo = data.queryInfo;
+
+          updateStatus('statusAnalyze', true);
+          updateStatus('statusSearch', true);
+          updateStatus('statusScrape', true);
+          updateStatus('statusGenerate', false);
+
+          // Display query info and sources immediately
+          $('#answerSection').fadeIn();
+          displayQueryInfo(queryInfo);
+          
+          // Smooth scroll to answer section
+          setTimeout(() => scrollToAnswer(), 300);
+          
+          // Display sources
+          $('#sourceCount').text(citations.length);
+          citations.forEach((source, i) => {
+            const sourceLink = $('<a>')
+              .addClass('source-link')
+              .attr('href', source.url)
+              .attr('target', '_blank')
+              .html(`
+                <span class="badge">${i + 1}</span>
+                <span class="source-text">${sanitizeURL(source.url)}</span>
+                <i class="fas fa-external-link-alt"></i>
+              `);
+            $('#sourcesList').append(sourceLink);
+          });
+
+          sourcesDisplayed = true;
+
+          // Show answer area with typing indicator
+          $('#answerText').html('<span class="typing-indicator"></span>');
+        });
+
+        let tokenBuffer = '';
+        let updateTimeout = null;
+        
+        // Function to update UI with batched tokens
+        function updateUI() {
+          let displayAnswer = fullAnswer;
+          
+          // Replace citations with badges
+          citations.forEach((source, i) => {
+            const ref = `[${i + 1}]`;
+            const tooltip = sanitizeURL(source.url);
+            const badge = `<span class="source-badge" 
+              data-bs-toggle="tooltip" 
+              title="${tooltip}"
+              onclick="window.open('${source.url}', '_blank')">[${i + 1}]</span>`;
+            displayAnswer = displayAnswer.replaceAll(ref, badge);
+          });
+
+          $('#answerText').html(marked.parse(displayAnswer) + '<span class="typing-indicator"></span>');
+
+          // Re-initialize tooltips (only for new badges)
+          const tooltips = document.querySelectorAll('[data-bs-toggle="tooltip"]:not(.tooltip-initialized)');
+          tooltips.forEach(t => {
+            new bootstrap.Tooltip(t);
+            t.classList.add('tooltip-initialized');
+          });
+        }
+
+        eventSource.addEventListener('token', (event) => {
+          const data = JSON.parse(event.data);
+          fullAnswer += data.content;
+
+          // Batch updates every 50ms for smoother rendering
+          if (!updateTimeout) {
+            updateTimeout = setTimeout(() => {
+              updateUI();
+              updateTimeout = null;
+            }, 50);
+          }
+        });
+
+        eventSource.addEventListener('done', async (event) => {
+          const data = JSON.parse(event.data);
+          
+          updateStatus('statusGenerate', true);
+          hideLoading();
+
+          // Final render without typing indicator
+          let displayAnswer = data.answer || fullAnswer;
+          
+          citations.forEach((source, i) => {
+            const ref = `[${i + 1}]`;
+            const tooltip = sanitizeURL(source.url);
+            const badge = `<span class="source-badge" 
+              data-bs-toggle="tooltip" 
+              title="${tooltip}"
+              onclick="window.open('${source.url}', '_blank')">[${i + 1}]</span>`;
+            displayAnswer = displayAnswer.replaceAll(ref, badge);
+          });
+
+          $('#answerText').html(marked.parse(displayAnswer));
+
+          // Re-initialize tooltips
+          const tooltips = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+          tooltips.forEach(t => new bootstrap.Tooltip(t));
+
+          // Processing time
+          const processingTime = data.processingTime || (Date.now() - startTime);
+          $('#processingTime').text(`Completed in ${(processingTime / 1000).toFixed(2)}s`);
+
+          // Related questions
+          const related = await relatedPromise;
+          displayRelatedQuestions(related);
+
+          eventSource.close();
+          resolve();
+        });
+
+        eventSource.addEventListener('error', (event) => {
+          console.error('SSE error:', event);
+          eventSource.close();
+          
+          // Fallback to non-streaming if streaming fails
+          console.log('Streaming failed, falling back to non-streaming mode');
+          performNonStreamingSearch(query, relatedPromise)
+            .then(resolve)
+            .catch(reject);
+        });
+      });
+    }
+
+    // Non-streaming search (fallback)
+    async function performNonStreamingSearch(query, relatedPromise) {
+      const response = await fetch('http://localhost:3001/ask', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ question: query, stream: false })
+      });
+
+      if (!response.ok) {
+        throw new Error('Request failed');
+      }
+
+      updateStatus('statusAnalyze', true);
+      updateStatus('statusSearch', true);
+      updateStatus('statusScrape', true);
+      updateStatus('statusGenerate', false);
+
+      const data = await response.json();
+
+      updateStatus('statusGenerate', true);
+      hideLoading();
+
+      // Display results
+      $('#answerSection').fadeIn();
+
+      // Query info
+      displayQueryInfo(data.queryInfo);
+
+      // Smooth scroll to answer section
+      setTimeout(() => scrollToAnswer(), 300);
+
+      // Answer
+      let answerHTML = data.answer || 'No answer found.';
+      const citations = data.citations || [];
+
+      // Replace citations with badges
+      citations.forEach((url, i) => {
+        const ref = `[${i + 1}]`;
+        const tooltip = sanitizeURL(url);
+        const badge = `<span class="source-badge" 
+          data-bs-toggle="tooltip" 
+          title="${tooltip}"
+          onclick="window.open('${url}', '_blank')">[${i + 1}]</span>`;
+        answerHTML = answerHTML.replaceAll(ref, badge);
+      });
+
+      $('#answerText').html(marked.parse(answerHTML));
+
+      // Initialize tooltips
+      const tooltips = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+      tooltips.forEach(t => new bootstrap.Tooltip(t));
+
+      // Sources
+      $('#sourceCount').text(citations.length);
+      citations.forEach((url, i) => {
+        const sourceLink = $('<a>')
+          .addClass('source-link')
+          .attr('href', url)
+          .attr('target', '_blank')
+          .html(`
+            <span class="badge">${i + 1}</span>
+            <span class="source-text">${sanitizeURL(url)}</span>
+            <i class="fas fa-external-link-alt"></i>
+          `);
+        $('#sourcesList').append(sourceLink);
+      });
+
+      // Processing time
+      if (data.processingTime) {
+        $('#processingTime').text(`Completed in ${(data.processingTime / 1000).toFixed(2)}s`);
+      }
+
+      // Related questions
+      const related = await relatedPromise;
+      displayRelatedQuestions(related);
+    }
+
+    // Clear context
+    async function clearContext() {
+      try {
+        await fetch('http://localhost:3001/ask/clear-context', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
+
+        // Clear UI
+        $('#answerSection').hide();
+        $('#query').val('');
+        $('#sourcesList').empty();
+        $('#relatedQuestions').empty();
+        $('#relatedCard').hide();
+        $('#answerText').html('');
+        $('#queryInfoContainer').empty();
+
+        // Show toast notification
+        showToast('Context cleared successfully', 'success');
+      } catch (err) {
+        console.error('Clear context failed:', err);
+        alert('Failed to clear context');
+      }
+    }
+
+    // Event handlers
+    $(document).ready(function() {
+      // Search button click
+      $('#searchBtn').on('click', performSearch);
+
+      // Enter key in search box
+      $('#query').on('keypress', function(e) {
+        if (e.which === 13) {
+          performSearch();
+        }
+      });
+
+      // Clear context button
+      $('#clearContextBtn').on('click', clearContext);
+
+      // Theme toggle button
+      $('#themeToggle').on('click', toggleTheme);
+    });
+  </script>
+</body>
+</html>
