@@ -1,6 +1,6 @@
-# Atlas - AI Answer Engine
+# Atlas - AI Answer Engine Agent
 
-An intelligent search and answer engine with real-time streaming, contextual query understanding, and source citations. Built with Node.js, Express, and Ollama.
+An intelligent search and answer engine with real-time streaming, contextual query understanding, and source citations. Built with Node.js, Express, and Ollama. This is our attempt to build a Perplexity like answer engine for learning purposes.
 
 ## Screenshots
 
