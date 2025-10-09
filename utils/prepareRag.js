@@ -19,7 +19,7 @@ async function prepareSourcesForRAG(searxResults, query) {
 
   console.log(`[PrepareRAG] Selected ${rankedResults.length} top sources`);
 
-  // Step 2: Prepare sources (with fallback scraping)
+  // Step 2: Prepare sources (prefer search snippets, scrape only when necessary)
   const sources = [];
   const urlsToScrape = [];
 
@@ -28,57 +28,71 @@ async function prepareSourcesForRAG(searxResults, query) {
     let content = result.content?.trim();
     const title = result.title || 'Untitled';
 
-    // Check if we need to scrape
-    if (!content || content.length < 100) {
-      urlsToScrape.push({ url, title, result });
-    } else {
-      // Use search result content
+    // Try to use search result content first (be aggressive to avoid scraping)
+    if (content && content.length > 30) {
       const cleanedContent = cleanText(content);
       const smartContent = extractSmartContent(cleanedContent, query, config.maxContentLength);
       
-      if (smartContent && smartContent.length > 50) {
-        console.log(`[PrepareRAG] Using search content for: ${url}`);
+      if (smartContent && smartContent.length > 30) {
+        console.log(`[PrepareRAG] Using search snippet: ${url} (${smartContent.length} chars)`);
         sources.push({
           title,
           url,
           content: smartContent,
           relevanceScore: result.relevanceScore,
+          fromSearch: true,
         });
-      } else {
-        urlsToScrape.push({ url, title, result });
+        continue; // Skip scraping for this URL
       }
+    }
+
+    // Only scrape if search content is really insufficient
+    // Note: Many sites return 403, so this is a fallback only
+    if (urlsToScrape.length < 2) { // Limit scraping attempts to reduce 403 errors
+      console.log(`[PrepareRAG] Will attempt scrape for: ${url}`);
+      urlsToScrape.push({ url, title, result });
+    } else {
+      console.log(`[PrepareRAG] Skipping scrape (limit reached), insufficient content from: ${url}`);
     }
   }
 
-  // Step 3: Scrape URLs in parallel (if needed)
+  // Step 3: Scrape URLs in parallel (if needed) - Limited to reduce 403 errors
   if (urlsToScrape.length > 0) {
-    console.log(`[PrepareRAG] Scraping ${urlsToScrape.length} URLs`);
+    console.log(`[PrepareRAG] Attempting to scrape ${urlsToScrape.length} URLs (Note: Many sites block scraping)`);
     
     const urls = urlsToScrape.map(item => item.url);
-    const scrapeResults = await scrapeMultiple(urls, config.maxConcurrentScrapes);
+    const scrapeResults = await scrapeMultiple(urls, Math.min(config.maxConcurrentScrapes, 2));
 
     scrapeResults.forEach((scrapeResult, index) => {
+      const { url, title, result } = urlsToScrape[index];
+      
       if (scrapeResult.success && scrapeResult.content) {
-        const { url, title, result } = urlsToScrape[index];
-        
         // Clean and extract relevant content
         const cleanedContent = cleanText(scrapeResult.content);
         const smartContent = extractSmartContent(cleanedContent, query, config.maxContentLength);
         
         if (smartContent && smartContent.length > 50) {
+          console.log(`[PrepareRAG] Successfully scraped: ${url} (${smartContent.length} chars)`);
           sources.push({
             title,
             url,
             content: smartContent,
             relevanceScore: result.relevanceScore,
+            fromScrape: true,
           });
         } else {
-          console.warn(`[PrepareRAG] Insufficient content from scraped: ${url}`);
+          console.warn(`[PrepareRAG] Scraped content too short: ${url}`);
         }
       } else {
-        console.warn(`[PrepareRAG] Scraping failed: ${scrapeResult.url} - ${scrapeResult.error}`);
+        // Scraping failed (likely 403 or other block) - this is expected for many sites
+        console.log(`[PrepareRAG] Scrape blocked (expected): ${scrapeResult.url}`);
       }
     });
+  }
+
+  // If we still don't have enough sources, we're limited by what SearXNG provides
+  if (sources.length === 0) {
+    console.warn('[PrepareRAG] No sources available - search results may be insufficient or sites blocking scraping');
   }
 
   console.log(`[PrepareRAG] Final source count: ${sources.length}`);

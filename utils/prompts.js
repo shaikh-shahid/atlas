@@ -91,20 +91,21 @@ Now provide a well-structured, intelligent answer with inline citations:`;
   relatedQuestions: (question, answer = null) => {
     const answerContext = answer ? `\n\nContext from answer:\n${answer.slice(0, 500)}...` : '';
     
-    return `Generate 5 concise, relevant follow-up questions based on the user's query${answer ? ' and the provided answer' : ''}.${answerContext}
+    return `Generate 5 concise, relevant follow-up questions based on this query${answer ? ' and answer' : ''}.${answerContext}
 
 Original Question: "${question}"
 
-Requirements:
-- Questions should be natural and conversational
-- Each question should explore a different aspect
-- Keep questions under 80 characters
-- Make them specific and actionable
-- Return ONLY a JSON array of strings, no explanations
+Generate exactly 5 follow-up questions that:
+- Are natural and conversational
+- Explore different aspects of the topic
+- Are under 80 characters each
+- Are specific and actionable
+- End with a question mark
 
-Example format: ["Question 1?", "Question 2?", "Question 3?", "Question 4?", "Question 5?"]
+IMPORTANT: Return ONLY a valid JSON array like this example, with no extra text:
+["What are the main types of machine learning?", "How does deep learning differ from traditional ML?", "What are common applications of machine learning?", "What programming languages are used for ML?", "How much data is needed to train ML models?"]
 
-Related Questions:`;
+Your JSON array:`;
   },
 
   /**

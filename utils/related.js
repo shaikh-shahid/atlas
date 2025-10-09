@@ -13,24 +13,43 @@ async function generateRelatedQuestions(question, answer = null) {
       temperature: 0.8, // Higher temperature for more diverse questions
     });
     
-    console.log('[Related] Generated questions:', response);
+    console.log('[Related] Raw response:', response);
     
-    // Try to parse JSON response
+    // Try multiple parsing strategies
+    let questions = [];
+    
+    // Strategy 1: Try to parse as JSON
     try {
       const parsed = JSON.parse(response.trim());
-      
       if (Array.isArray(parsed)) {
-        return parsed.slice(0, 5); // Ensure max 5 questions
+        questions = parsed.slice(0, 5);
+        console.log('[Related] Successfully parsed JSON:', questions);
+        return questions;
       }
     } catch (parseError) {
-      console.warn('[Related] Failed to parse JSON, attempting extraction');
-      
-      // Fallback: extract questions from text
-      const questions = extractQuestionsFromText(response);
-      return questions.slice(0, 5);
+      console.log('[Related] JSON parse failed, trying extraction...');
     }
     
-    return [];
+    // Strategy 2: Look for JSON array in the text
+    const jsonMatch = response.match(/\[[\s\S]*\]/);
+    if (jsonMatch) {
+      try {
+        const parsed = JSON.parse(jsonMatch[0]);
+        if (Array.isArray(parsed)) {
+          questions = parsed.slice(0, 5);
+          console.log('[Related] Extracted JSON from text:', questions);
+          return questions;
+        }
+      } catch (e) {
+        console.log('[Related] JSON extraction failed');
+      }
+    }
+    
+    // Strategy 3: Extract questions from text
+    questions = extractQuestionsFromText(response);
+    console.log('[Related] Extracted from text:', questions);
+    
+    return questions.slice(0, 5);
   } catch (error) {
     console.error('[Related] Generation failed:', error.message);
     return [];
@@ -43,20 +62,30 @@ async function generateRelatedQuestions(question, answer = null) {
 function extractQuestionsFromText(text) {
   const questions = [];
   
-  // Try to find lines that look like questions
-  const lines = text.split('\n');
+  // Split by common delimiters
+  const lines = text.split(/\n|,(?=\s*")/);
   
   for (const line of lines) {
     const trimmed = line.trim();
     
-    // Remove numbering and quotes
+    // Remove numbering, quotes, and brackets
     const cleaned = trimmed
-      .replace(/^\d+\.\s*/, '') // Remove "1. "
-      .replace(/^[-*]\s*/, '') // Remove "- " or "* "
-      .replace(/^["']|["']$/g, ''); // Remove quotes
+      .replace(/^\d+[\.)]\s*/, '') // Remove "1. " or "1) "
+      .replace(/^[-*•]\s*/, '') // Remove "- " or "* " or "• "
+      .replace(/^["'\[\]]+|["'\[\]]+$/g, '') // Remove quotes and brackets
+      .trim();
     
-    if (cleaned.length > 10 && cleaned.length < 100 && cleaned.includes('?')) {
-      questions.push(cleaned);
+    // Check if it's a valid question
+    if (cleaned.length > 15 && cleaned.length < 150 && cleaned.includes('?')) {
+      // Clean up any remaining artifacts
+      const finalClean = cleaned
+        .replace(/^\s*["']/, '') // Remove leading quotes
+        .replace(/["']\s*$/, '') // Remove trailing quotes
+        .trim();
+      
+      if (finalClean && !questions.includes(finalClean)) {
+        questions.push(finalClean);
+      }
     }
   }
   

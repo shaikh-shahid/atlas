@@ -15,12 +15,12 @@ function sleep(ms) {
 /**
  * Scrape and extract clean content from URL with retry logic
  */
-async function scrapeAndClean(url, retries = 3) {
+async function scrapeAndClean(url, retries = 2) { // Reduced retries from 3 to 2
   // Check cache first
   const cached = cache.getScrape(url);
   if (cached) return cached;
 
-  console.log(`[Scraper] Crawling: ${url}`);
+  console.log(`[Scraper] Attempting: ${url}`);
 
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
@@ -31,6 +31,8 @@ async function scrapeAndClean(url, retries = 3) {
       const client = wrapper(axios.create({ 
         jar,
         timeout: config.scrapeTimeout,
+        maxRedirects: 3,
+        validateStatus: (status) => status >= 200 && status < 300, // Only accept 2xx
       }));
 
       const headers = {
@@ -51,13 +53,13 @@ async function scrapeAndClean(url, retries = 3) {
       const article = reader.parse();
 
       if (!article || !article.textContent) {
-        throw new Error('No content extracted from page');
+        throw new Error('No content extracted');
       }
 
       const content = article.textContent.trim();
       
       if (content.length < 100) {
-        throw new Error('Content too short (possible scraping failure)');
+        throw new Error('Content too short');
       }
 
       console.log(`[Scraper] Success: ${url} (${content.length} chars)`);
@@ -68,17 +70,25 @@ async function scrapeAndClean(url, retries = 3) {
       return content;
 
     } catch (error) {
-      console.warn(`[Scraper] Attempt ${attempt}/${retries} failed for ${url}: ${error.message}`);
+      const is403 = error.response?.status === 403;
+      const is401 = error.response?.status === 401;
+      const isBlocked = is403 || is401;
+      
+      if (isBlocked) {
+        console.log(`[Scraper] Blocked (${error.response.status}): ${url} - Site prevents scraping`);
+        throw new Error(`Site blocks scraping (${error.response.status})`);
+      }
+      
+      console.warn(`[Scraper] Attempt ${attempt}/${retries} failed: ${url} - ${error.message}`);
       
       if (attempt < retries) {
-        // Exponential backoff
-        const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000);
+        // Shorter backoff for retries
+        const delay = 1000 * attempt;
         console.log(`[Scraper] Retrying in ${delay}ms...`);
         await sleep(delay);
       } else {
-        // All retries exhausted
-        console.error(`[Scraper] Failed after ${retries} attempts: ${url}`);
-        throw new Error(`Failed to scrape ${url}: ${error.message}`);
+        console.log(`[Scraper] Failed after ${retries} attempts: ${url}`);
+        throw new Error(`Scraping failed: ${error.message}`);
       }
     }
   }

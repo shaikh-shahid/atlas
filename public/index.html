@@ -156,21 +156,6 @@
       cursor: not-allowed;
     }
 
-    #clearContextBtn {
-      background: transparent;
-      border: 1px solid var(--border-color);
-      border-radius: 12px;
-      color: var(--text-secondary);
-      margin-left: 0.5rem;
-      padding: 0.5rem 1rem;
-      transition: all 0.3s ease;
-    }
-
-    #clearContextBtn:hover {
-      border-color: var(--primary-color);
-      color: var(--primary-color);
-      background: var(--primary-light);
-    }
 
     /* Status Indicators */
     .status-container {
@@ -212,6 +197,22 @@
       animation: fadeIn 0.5s ease;
     }
 
+    #answerSection .row {
+      align-items: flex-start;
+    }
+
+    /* Ensure both columns start at same height */
+    #answerSection .col-lg-8,
+    #answerSection .col-lg-4 {
+      display: flex;
+      flex-direction: column;
+    }
+
+    #answerSection .col-lg-8 > *:first-child,
+    #answerSection .col-lg-4 > *:first-child {
+      margin-top: 0;
+    }
+
     @keyframes fadeIn {
       from { opacity: 0; transform: translateY(20px); }
       to { opacity: 1; transform: translateY(0); }
@@ -224,6 +225,7 @@
       box-shadow: var(--card-shadow);
       margin-bottom: 1.5rem;
       transition: all 0.3s ease;
+      height: fit-content;
     }
 
     .card:hover {
@@ -442,11 +444,6 @@
         width: 100%;
       }
 
-      #clearContextBtn {
-        margin-top: 0.5rem;
-        width: 100%;
-      }
-
       .card-body {
         padding: 1.5rem;
       }
@@ -547,11 +544,18 @@
     .status-container,
     #query,
     #searchBtn,
-    #clearContextBtn,
     .source-link,
-    #relatedQuestions li a,
-    .query-info {
+    #relatedQuestions li a {
       transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+    }
+
+    /* Sources sidebar sticky on desktop */
+    @media (min-width: 992px) {
+      #answerSection .col-lg-4 {
+        position: sticky;
+        top: 1rem;
+        align-self: flex-start;
+      }
     }
 
     @media (max-width: 768px) {
@@ -591,9 +595,8 @@
         <button class="btn btn-primary" id="searchBtn">
           <i class="fas fa-search"></i> Search
         </button>
-        <button class="btn btn-outline-secondary" id="clearContextBtn" title="Clear conversation context">
-          <i class="fas fa-trash"></i>
-        </button>
+      </div>
+      <div class="mt-2" style="display: flex; align-items: center; gap: 0.5rem;">
       </div>
 
       <!-- Status Container -->
@@ -619,12 +622,9 @@
 
     <!-- Results Section -->
     <div id="answerSection">
-      <div class="row">
+      <div class="row g-3">
         <!-- Answer Column -->
-        <div class="col-lg-8">
-          <!-- Query Info -->
-          <div id="queryInfoContainer"></div>
-
+        <div class="col-lg-8 col-md-12">
           <!-- Answer Card -->
           <div class="card">
             <div class="card-body">
@@ -650,8 +650,8 @@
         </div>
 
         <!-- Sources Column -->
-        <div class="col-lg-4">
-          <div class="card">
+        <div class="col-lg-4 col-md-12">
+          <div class="card" id="sourcesCard">
             <div class="card-body">
               <h5 class="card-title">
                 <i class="fas fa-link"></i>
@@ -788,7 +788,6 @@
         </div>`;
       }
       
-      $('#queryInfoContainer').html(html);
     }
 
     // Smooth scroll to answer section
@@ -808,22 +807,35 @@
     // Fetch related questions
     async function fetchRelatedQuestions(query, answer = null) {
       try {
+        console.log('[Frontend] Fetching related questions for:', query);
         const res = await fetch('http://localhost:3001/related', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ question: query, answer })
         });
+        
+        if (!res.ok) {
+          console.error('[Frontend] Related questions request failed:', res.status);
+          return [];
+        }
+        
         const data = await res.json();
+        console.log('[Frontend] Related questions response:', data);
         return data.related || [];
       } catch (err) {
-        console.error('Related questions failed:', err);
+        console.error('[Frontend] Related questions error:', err);
         return [];
       }
     }
 
     // Display related questions
     function displayRelatedQuestions(questions) {
-      if (!questions || questions.length === 0) return;
+      console.log('[Frontend] Displaying related questions:', questions);
+      
+      if (!questions || questions.length === 0) {
+        console.log('[Frontend] No related questions to display');
+        return;
+      }
 
       $('#relatedQuestions').empty();
       questions.forEach(q => {
@@ -836,6 +848,7 @@
         $('#relatedQuestions').append(li);
       });
       $('#relatedCard').slideDown();
+      console.log('[Frontend] Related questions displayed:', questions.length);
     }
 
     // Main search function with streaming support
@@ -851,7 +864,6 @@
       $('#answerText').html('');
       $('#relatedQuestions').empty();
       $('#relatedCard').hide();
-      $('#queryInfoContainer').empty();
       $('#processingTime').empty();
 
       showLoading();
@@ -1101,30 +1113,6 @@
       displayRelatedQuestions(related);
     }
 
-    // Clear context
-    async function clearContext() {
-      try {
-        await fetch('http://localhost:3001/ask/clear-context', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' }
-        });
-
-        // Clear UI
-        $('#answerSection').hide();
-        $('#query').val('');
-        $('#sourcesList').empty();
-        $('#relatedQuestions').empty();
-        $('#relatedCard').hide();
-        $('#answerText').html('');
-        $('#queryInfoContainer').empty();
-
-        // Show toast notification
-        showToast('Context cleared successfully', 'success');
-      } catch (err) {
-        console.error('Clear context failed:', err);
-        alert('Failed to clear context');
-      }
-    }
 
     // Event handlers
     $(document).ready(function() {
@@ -1138,11 +1126,11 @@
         }
       });
 
-      // Clear context button
-      $('#clearContextBtn').on('click', clearContext);
-
       // Theme toggle button
       $('#themeToggle').on('click', toggleTheme);
+
+      // Focus on search input on load
+      $('#query').focus();
     });
   </script>
 </body>
