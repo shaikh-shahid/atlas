@@ -116,7 +116,7 @@ Atlas is an AI-powered answer engine agent that combines web search, intelligent
 1. **Clone the repository**
    ```bash
    git clone <repository-url>
-   cd perplexity-mvp
+   cd atlas
    ```
 
 2. **Install dependencies**
@@ -178,7 +178,7 @@ ENABLE_QUERY_REWRITING=true
 ## Project Structure
 
 ```
-perplexity-mvp/
+atlas/
 ├── config/
 │   └── index.js              # Configuration management
 ├── routes/
