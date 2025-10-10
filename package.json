@@ -25,6 +25,7 @@
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
     "express": "^5.1.0",
+    "highlight.js": "^11.11.1",
     "jsdom": "^26.1.0",
     "node-cache": "^5.1.2",
     "tough-cookie": "^5.1.2",

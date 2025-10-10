@@ -8,9 +8,11 @@
   <!-- External Dependencies -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css" rel="stylesheet">
   <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 
   <style>
     :root {
@@ -245,15 +247,52 @@
       display: flex;
       align-items: center;
       gap: 0.5rem;
+      justify-content: space-between;
     }
 
     .card-title i {
       color: var(--primary-color);
     }
 
+    .card-title .title-left {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .card-title .title-actions {
+      display: flex;
+      gap: 0.5rem;
+    }
+
     .badge {
       background: var(--primary-color) !important;
       color: var(--bg-dark) !important;
+    }
+
+    /* Action buttons (copy, regenerate) */
+    .action-btn {
+      background: transparent;
+      border: 1px solid var(--border-color);
+      color: var(--text-secondary);
+      padding: 0.4rem 0.8rem;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .action-btn:hover {
+      border-color: var(--primary-color);
+      color: var(--primary-color);
+      background: var(--primary-light);
+    }
+
+    .action-btn i {
+      font-size: 0.9rem;
     }
 
     /* Answer Text */
@@ -296,34 +335,65 @@
       border: 1px solid var(--border-color);
     }
 
-    /* Source Badge */
-    .source-badge {
-      background: var(--primary-color);
-      color: var(--bg-dark);
-      padding: 2px 8px;
-      border-radius: 6px;
-      font-size: 0.85rem;
-      font-weight: 700;
-      margin: 0 2px;
+    /* Citation - Superscript style (Perplexity-like) */
+    .citation {
+      font-size: 0.7em;
+      vertical-align: super;
+      color: var(--primary-color);
       cursor: pointer;
-      display: inline-block;
-      transition: all 0.2s ease;
       text-decoration: none;
+      font-weight: 600;
+      margin-left: 1px;
+      margin-right: 1px;
+      padding: 0 2px;
+      transition: all 0.2s ease;
+      border-bottom: 1px solid transparent;
     }
 
-    .source-badge:hover {
-      background: var(--primary-hover);
-      transform: translateY(-1px);
-      box-shadow: 0 2px 8px rgba(32, 184, 205, 0.5);
+    .citation:hover {
+      color: var(--primary-hover);
+      border-bottom-color: var(--primary-color);
     }
 
-    /* Sources List */
+    /* Code blocks */
+    .markdown-body pre {
+      background: var(--bg-dark);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 1rem;
+      overflow-x: auto;
+      margin: 1rem 0;
+    }
+
+    .markdown-body pre code {
+      background: transparent;
+      border: none;
+      padding: 0;
+      color: inherit;
+    }
+
+    /* Inline code */
+    .markdown-body code {
+      font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
+      font-size: 0.9em;
+    }
+
+    /* Override highlight.js theme for light mode */
+    [data-theme="light"] .markdown-body pre {
+      background: #f6f8fa;
+    }
+
+    [data-theme="light"] .markdown-body pre code {
+      color: #24292e;
+    }
+
+    /* Sources List with Favicons */
     .source-link {
       display: flex;
-      align-items: center;
+      align-items: flex-start;
       gap: 0.75rem;
       padding: 0.75rem;
-      margin-bottom: 0.5rem;
+      margin-bottom: 0.75rem;
       border-radius: 8px;
       border: 1px solid transparent;
       transition: all 0.2s ease;
@@ -337,23 +407,44 @@
       transform: translateX(4px);
     }
 
-    .source-link .badge {
-      background: var(--primary-color);
-      color: var(--bg-dark);
-      font-weight: 600;
-      padding: 0.4rem 0.6rem;
-      border-radius: 6px;
+    .source-favicon {
+      width: 20px;
+      height: 20px;
+      border-radius: 4px;
+      flex-shrink: 0;
+      margin-top: 2px;
     }
 
-    .source-link .source-text {
+    .source-content {
       flex: 1;
-      font-size: 0.9rem;
-      color: var(--text-secondary);
-      word-break: break-all;
+      min-width: 0;
     }
 
-    .source-link i {
+    .source-title {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 0.25rem;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .source-url {
+      font-size: 0.8rem;
       color: var(--text-secondary);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .source-badge {
+      font-size: 0.75rem;
+      color: var(--primary-color);
+      font-weight: 600;
+      margin-right: 0.5rem;
     }
 
     /* Related Questions */
@@ -446,6 +537,21 @@
 
       .card-body {
         padding: 1.5rem;
+      }
+
+      .card-title {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+      }
+
+      .title-actions {
+        width: 100%;
+        justify-content: flex-start;
+      }
+
+      .action-btn span {
+        display: none;
       }
     }
 
@@ -629,8 +735,20 @@
           <div class="card">
             <div class="card-body">
               <h5 class="card-title">
-                <i class="fas fa-comment-alt"></i>
-                Answer
+                <div class="title-left">
+                  <i class="fas fa-comment-alt"></i>
+                  <span>Answer</span>
+                </div>
+                <div class="title-actions">
+                  <button class="action-btn" id="copyAnswerBtn" title="Copy answer">
+                    <i class="fas fa-copy"></i>
+                    <span>Copy</span>
+                  </button>
+                  <button class="action-btn" id="regenerateBtn" title="Regenerate answer" style="display: none;">
+                    <i class="fas fa-redo"></i>
+                    <span>Regenerate</span>
+                  </button>
+                </div>
               </h5>
               <div id="answerText" class="markdown-body"></div>
               <div class="processing-time" id="processingTime"></div>
@@ -671,6 +789,8 @@
     // State management
     let isSearching = false;
     let currentQuery = '';
+    let currentAnswer = '';
+    let currentCitations = [];
 
     // Theme Management
     (function initTheme() {
@@ -733,6 +853,97 @@
       } catch {
         return url.replace(/^https?:\/\/(www\.)?/, '').split(/[?#]/)[0];
       }
+    }
+
+    // Get domain from URL
+    function getDomain(url) {
+      try {
+        const urlObj = new URL(url);
+        return urlObj.hostname.replace('www.', '');
+      } catch {
+        return '';
+      }
+    }
+
+    // Get favicon URL
+    function getFaviconURL(url) {
+      const domain = getDomain(url);
+      if (!domain) return 'https://www.google.com/s2/favicons?domain=example.com&sz=32';
+      return `https://www.google.com/s2/favicons?domain=${domain}&sz=32`;
+    }
+
+    // Get title from URL
+    function getTitleFromURL(url) {
+      const domain = getDomain(url);
+      return domain.split('.')[0].charAt(0).toUpperCase() + domain.split('.')[0].slice(1);
+    }
+
+    // Copy answer to clipboard
+    async function copyAnswer() {
+      if (!currentAnswer) {
+        showToast('No answer to copy', 'warning');
+        return;
+      }
+
+      try {
+        // Strip markdown and citations for clean text
+        let textToCopy = currentAnswer;
+        
+        // Remove citation markers
+        textToCopy = textToCopy.replace(/\[\d+\]/g, '');
+        
+        // Add sources at the end
+        if (currentCitations.length > 0) {
+          textToCopy += '\n\nSources:\n';
+          currentCitations.forEach((url, i) => {
+            textToCopy += `${i + 1}. ${url}\n`;
+          });
+        }
+
+        await navigator.clipboard.writeText(textToCopy);
+        
+        // Update button temporarily
+        const btn = $('#copyAnswerBtn');
+        const originalHTML = btn.html();
+        btn.html('<i class="fas fa-check"></i> <span>Copied!</span>');
+        
+        setTimeout(() => {
+          btn.html(originalHTML);
+        }, 2000);
+        
+        showToast('Answer copied to clipboard', 'success');
+      } catch (err) {
+        console.error('Copy failed:', err);
+        showToast('Failed to copy', 'warning');
+      }
+    }
+
+    // Regenerate answer
+    async function regenerateAnswer() {
+      if (!currentQuery) return;
+      
+      // Clear cache for this query
+      try {
+        await fetch('http://localhost:3001/api/clear-cache', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ query: currentQuery })
+        });
+      } catch (err) {
+        console.log('Cache clear failed (non-critical)');
+      }
+      
+      showToast('Regenerating answer...', 'info');
+      
+      // Re-run search
+      performSearch();
+    }
+
+    // Apply syntax highlighting to code blocks
+    function highlightCode() {
+      document.querySelectorAll('pre code').forEach((block) => {
+        hljs.highlightElement(block);
+      });
     }
 
     // Update status indicators
@@ -865,6 +1076,7 @@
       $('#relatedQuestions').empty();
       $('#relatedCard').hide();
       $('#processingTime').empty();
+      $('#regenerateBtn').hide();
 
       showLoading();
 
@@ -924,17 +1136,25 @@
           // Smooth scroll to answer section
           setTimeout(() => scrollToAnswer(), 300);
           
-          // Display sources
+          // Display sources with favicons
           $('#sourceCount').text(citations.length);
           citations.forEach((source, i) => {
+            const favicon = getFaviconURL(source.url);
+            const title = source.title || getTitleFromURL(source.url);
+            const domain = getDomain(source.url);
+            
             const sourceLink = $('<a>')
               .addClass('source-link')
               .attr('href', source.url)
               .attr('target', '_blank')
               .html(`
-                <span class="badge">${i + 1}</span>
-                <span class="source-text">${sanitizeURL(source.url)}</span>
-                <i class="fas fa-external-link-alt"></i>
+                <img src="${favicon}" class="source-favicon" onerror="this.style.display='none'" alt="favicon">
+                <div class="source-content">
+                  <div class="source-title">${title}</div>
+                  <div class="source-url">
+                    <span class="source-badge">${i + 1}</span>${domain}
+                  </div>
+                </div>
               `);
             $('#sourcesList').append(sourceLink);
           });
@@ -952,20 +1172,25 @@
         function updateUI() {
           let displayAnswer = fullAnswer;
           
-          // Replace citations with badges
+          // Replace citations with superscript (Perplexity-style)
           citations.forEach((source, i) => {
             const ref = `[${i + 1}]`;
             const tooltip = sanitizeURL(source.url);
-            const badge = `<span class="source-badge" 
+            const citation = `<a class="citation" 
               data-bs-toggle="tooltip" 
               title="${tooltip}"
-              onclick="window.open('${source.url}', '_blank')">[${i + 1}]</span>`;
-            displayAnswer = displayAnswer.replaceAll(ref, badge);
+              href="${source.url}"
+              target="_blank"
+              onclick="event.preventDefault(); window.open('${source.url}', '_blank');">[${i + 1}]</a>`;
+            displayAnswer = displayAnswer.replaceAll(ref, citation);
           });
 
           $('#answerText').html(marked.parse(displayAnswer) + '<span class="typing-indicator"></span>');
 
-          // Re-initialize tooltips (only for new badges)
+          // Apply syntax highlighting
+          highlightCode();
+
+          // Re-initialize tooltips (only for new citations)
           const tooltips = document.querySelectorAll('[data-bs-toggle="tooltip"]:not(.tooltip-initialized)');
           tooltips.forEach(t => {
             new bootstrap.Tooltip(t);
@@ -995,21 +1220,33 @@
           // Final render without typing indicator
           let displayAnswer = data.answer || fullAnswer;
           
+          // Store for copy function
+          currentAnswer = displayAnswer;
+          currentCitations = citations.map(s => s.url);
+          
           citations.forEach((source, i) => {
             const ref = `[${i + 1}]`;
             const tooltip = sanitizeURL(source.url);
-            const badge = `<span class="source-badge" 
+            const citation = `<a class="citation" 
               data-bs-toggle="tooltip" 
               title="${tooltip}"
-              onclick="window.open('${source.url}', '_blank')">[${i + 1}]</span>`;
-            displayAnswer = displayAnswer.replaceAll(ref, badge);
+              href="${source.url}"
+              target="_blank"
+              onclick="event.preventDefault(); window.open('${source.url}', '_blank');">[${i + 1}]</a>`;
+            displayAnswer = displayAnswer.replaceAll(ref, citation);
           });
 
           $('#answerText').html(marked.parse(displayAnswer));
 
+          // Apply syntax highlighting
+          highlightCode();
+
           // Re-initialize tooltips
           const tooltips = document.querySelectorAll('[data-bs-toggle="tooltip"]');
           tooltips.forEach(t => new bootstrap.Tooltip(t));
+
+          // Show regenerate button
+          $('#regenerateBtn').show();
 
           // Processing time
           const processingTime = data.processingTime || (Date.now() - startTime);
@@ -1071,37 +1308,57 @@
       let answerHTML = data.answer || 'No answer found.';
       const citations = data.citations || [];
 
-      // Replace citations with badges
+      // Store for copy/regenerate
+      currentAnswer = answerHTML;
+      currentCitations = citations;
+
+      // Replace citations with superscript (Perplexity-style)
       citations.forEach((url, i) => {
         const ref = `[${i + 1}]`;
         const tooltip = sanitizeURL(url);
-        const badge = `<span class="source-badge" 
+        const citation = `<a class="citation" 
           data-bs-toggle="tooltip" 
           title="${tooltip}"
-          onclick="window.open('${url}', '_blank')">[${i + 1}]</span>`;
-        answerHTML = answerHTML.replaceAll(ref, badge);
+          href="${url}"
+          target="_blank"
+          onclick="event.preventDefault(); window.open('${url}', '_blank');">[${i + 1}]</a>`;
+        answerHTML = answerHTML.replaceAll(ref, citation);
       });
 
       $('#answerText').html(marked.parse(answerHTML));
+
+      // Apply syntax highlighting
+      highlightCode();
 
       // Initialize tooltips
       const tooltips = document.querySelectorAll('[data-bs-toggle="tooltip"]');
       tooltips.forEach(t => new bootstrap.Tooltip(t));
 
-      // Sources
+      // Sources with favicons
       $('#sourceCount').text(citations.length);
       citations.forEach((url, i) => {
+        const favicon = getFaviconURL(url);
+        const title = getTitleFromURL(url);
+        const domain = getDomain(url);
+        
         const sourceLink = $('<a>')
           .addClass('source-link')
           .attr('href', url)
           .attr('target', '_blank')
           .html(`
-            <span class="badge">${i + 1}</span>
-            <span class="source-text">${sanitizeURL(url)}</span>
-            <i class="fas fa-external-link-alt"></i>
+            <img src="${favicon}" class="source-favicon" onerror="this.style.display='none'" alt="favicon">
+            <div class="source-content">
+              <div class="source-title">${title}</div>
+              <div class="source-url">
+                <span class="source-badge">${i + 1}</span>${domain}
+              </div>
+            </div>
           `);
         $('#sourcesList').append(sourceLink);
       });
+
+      // Show regenerate button
+      $('#regenerateBtn').show();
 
       // Processing time
       if (data.processingTime) {
@@ -1129,8 +1386,20 @@
       // Theme toggle button
       $('#themeToggle').on('click', toggleTheme);
 
+      // Copy answer button
+      $('#copyAnswerBtn').on('click', copyAnswer);
+
+      // Regenerate button
+      $('#regenerateBtn').on('click', regenerateAnswer);
+
       // Focus on search input on load
       $('#query').focus();
+
+      // Configure marked.js for better rendering
+      marked.setOptions({
+        breaks: true,
+        gfm: true,
+      });
     });
   </script>
 </body>
