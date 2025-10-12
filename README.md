@@ -137,7 +137,7 @@ Atlas is an AI-powered answer engine agent that combines web search, intelligent
 
 5. **Access the application**
    ```
-   http://localhost:3001
+   http://localhost:3000
    ```
 
 ## Configuration
@@ -146,7 +146,7 @@ Create a `.env` file in the root directory:
 
 ```env
 # Server Configuration
-PORT=3001
+PORT=3000
 NODE_ENV=development
 
 # External Services
@@ -333,7 +333,7 @@ REQUEST_TIMEOUT=60000
 ### Slow Responses
 - Enable caching: `ENABLE_CACHING=true`
 - Reduce `MAX_SEARCH_RESULTS` to 3-4
-- Check cache stats: `curl http://localhost:3001/api/cache-stats`
+- Check cache stats: `curl http://localhost:3000/api/cache-stats`
 
 ## Contributing
 
@@ -359,8 +359,8 @@ ISC
 
 For issues and questions:
 - Check the logs in console output
-- Review API health: `http://localhost:3001/api/health`
-- Check cache stats: `http://localhost:3001/api/cache-stats`
+- Review API health: `http://localhost:3000/api/health`
+- Check cache stats: `http://localhost:3000/api/cache-stats`
 
 Most issues are related to external service connectivity (SearXNG, Ollama).
 
