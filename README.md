@@ -9,7 +9,7 @@ An intelligent search and answer engine with real-time streaming, contextual que
 ## Demo
 
 [Demo Video Here - ](https://www.youtube.com/watch?v=ridAzmGu4zs)
-screenshot.png
+
 ## Overview
 
 Atlas is an AI-powered answer engine agent that combines web search, intelligent content extraction, and large language models to provide accurate, cited answers to user queries. The system features real-time response streaming, contextual query rewriting, multi-layer caching, and a modern dark/light theme interface.
